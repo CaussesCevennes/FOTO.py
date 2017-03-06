@@ -47,7 +47,7 @@ except:
 
 class FOTO():
 
-	def __init__(self, inPath, blockSize, method='BLOCK', maxSample=29):
+	def __init__(self, inPath, blockSize, method='BLOCK', maxSample=29, normalize=False):
 		'''
 		inPath : file name of the input raster
 		blockSize : size in pixel of the windows
@@ -65,6 +65,8 @@ class FOTO():
 		self.inWidth, self.inHeight = self.inDataset.RasterXSize, self.inDataset.RasterYSize
 		self.nbBands = self.inDataset.RasterCount
 		self.blockSize = blockSize
+
+		self.normalize = normalize
 
 		if self.method == 'BLOCK':
 			#Strategy 1: use all data (will produce incomplete blocks)
@@ -241,14 +243,14 @@ class FOTO():
 
 		#Normalize/scale values between 0 and 1
 		#(change will also affect self.score because the 2 arrays share the same memory datablock)
-		r, g, b = self.RGB[:,:,0], self.RGB[:,:,1], self.RGB[:,:,2]
-		#keep correct PCA center (used for ploting pca)
-		self.centerx = scale(0, r.min(), r.max(), 0, 1)
-		self.centery = scale(0, g.min(), g.max(), 0, 1)
-		self.RGB[:,:,0] = npScale(r, 0, 1)
-		self.RGB[:,:,1] = npScale(g, 0, 1)
-		self.RGB[:,:,2] = npScale(b, 0, 1)
-		
+		self.center = [0, 0, 0] #PCA center for ploting axis
+		if self.normalize:
+			for i in range(self.nbBands):
+				band = self.RGB[:,:,i]
+				#keep correct PCA center (used for ploting pca)
+				self.center[i] = scale(0, band.min(), band.max(), 0, 1)
+				self.RGB[:,:,i] = npScale(band, 0, 1)
+
 		#Write output RGB raster
 		if outPathRGB:
 			self.writeRGB(outPathRGB)
@@ -339,15 +341,20 @@ class FOTO():
 		fig.subplots_adjust(wspace = 0.5, hspace = 0.5)
 
 		#Plot ACP
+		cx, cy, cz = self.center
 		with plt.style.context('seaborn-whitegrid'):
 			plt.subplot(2,1,1) #Split the figure into 2 lines and 1 column and get the fist position
-			plt.axhline(y=self.centerx, linewidth=1., linestyle='dashed', color="black")
-			plt.axvline(x=self.centery, linewidth=1., linestyle='dashed', color="black")
+			plt.axvline(x=cx, linewidth=1., linestyle='dashed', color="black")
+			plt.axhline(y=cy, linewidth=1., linestyle='dashed', color="black")
 			plt.xlabel('Principal Component 1')
 			plt.ylabel('Principal Component 2')
 
 			data = self.score
-			plt.scatter(data[:,0], data[:,1], s=4, c=data) #warn color must be normalized from 0 to 1
+			if self.normalize:
+				#warn color must be normalized from 0 to 1
+				plt.scatter(data[:,0], data[:,1], s=4, c=data)
+			else:
+				plt.scatter(data[:,0], data[:,1], s=4)
 
 		#Plot FOTO RGB map
 		plt.subplot(2,2,3) #Split the figure into 2 lines and 2 columns and get the third position
