@@ -3,7 +3,7 @@ Fourier Transform Textural Ordination in Python
 
 Usage
 
-```
+```python
 from FOTO import FOTO
 
 if __name__ == '__main__': #guard needed to make the client multiprocess safe
