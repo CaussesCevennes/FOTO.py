@@ -1,6 +1,9 @@
 # FOTO.py
 Fourier Transform Textural Ordination in Python
 
+**Deprecration warning :** This project is no longer maintained, please use the more powerfull [fototex](https://pypi.org/project/fototex/) package.
+
+
 Usage
 
 ```python
